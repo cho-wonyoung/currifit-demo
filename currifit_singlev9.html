@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>커리핏 (CurriFit)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial,sans-serif; background: #f0f2f5; color: #333; }
+    header { background: #004080; color: #fff; padding: 10px 20px; position: fixed; top: 0; width: 100%; z-index: 10; }
+    header nav a { color: #fff; margin-right: 15px; text-decoration: none; cursor: pointer; }
+    main { padding-top: 60px; }
+    section { display: none; }
+    section.active { display: block; }
+    .btn { background: #004080; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+
+    /* MAIN */
+    #depth1 .hero { background: #e8e8e8; text-align: center; padding: 60px 20px; border-radius: 8px; margin: 20px; }
+    #depth1 .quote { font-size: 16px; color: #555; }
+    #depth1 .title { font-size: 32px; color: #004080; margin: 10px 0; font-weight: bold; }
+    #start-btn { margin-top: 12px; }
+
+    /* STEP1 */
+    #depth2 { padding: 40px 20px; }
+    #depth2 h2 { text-align: center; font-size: 24px; color: #004080; margin-bottom: 24px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; max-width: 900px; margin: 0 auto 24px; }
+    .form-grid label { font-size: 14px; color: #333; margin-bottom: 4px; display: block; }
+    .form-grid input, .form-grid select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .form-grid input::placeholder { color: #999; }
+    .controls { text-align: right; max-width: 900px; margin: 0 auto 16px; }
+    #loading { display: none; text-align: center; margin: 20px 0; }
+    .loader { width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top-color: #004080; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #lecture-title {
+      display: none; background: #004080; color: #fff; text-align: center;
+      padding: 12px; font-size: 20px; margin: 20px auto 8px; border-radius: 4px;
+      max-width: 900px; width: 100%; box-sizing: border-box;
+    }
+    #lecture-msg { display: none; text-align: center; color: #c00; margin-bottom: 16px; font-size: 16px; }
+    .lecture-wrapper { max-width: 900px; margin: 0 auto; position: relative; }
+    #online { display: none; grid-template-columns: repeat(2,1fr); gap: 16px; max-width: 900px; margin: 0 auto; display: grid; }
+    .lecture-card { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 12px; border-radius: 6px; border: 2px solid transparent; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .lecture-card .content { display: flex; align-items: center; gap: 12px; }
+    .lecture-card .content span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .level-1 { border-color: #28a745!important; }
+    .level-2 { border-color: #fd7e14!important; }
+    .level-3 { border-color: #007bff!important; }
+    #add-roadmap { display: none; position: absolute; right: 0; bottom: -40px; }
+
+    /* STEP2 */
+    #depthCombined { padding: 40px 20px; }
+    #depthCombined h2 { font-size: 24px; color: #004080; text-align: center; margin-bottom: 24px; }
+    .summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; max-width: 1000px; margin: 0 auto 40px; background: #fff; padding: 24px; border-radius: 8px; }
+    .card { background: #fdfdfd; padding: 16px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card.full { grid-column: span 3; }
+    .card h3 { margin: 0 0 8px; font-size: 16px; color: #004080; border-bottom: 2px solid #004080; padding-bottom: 4px; }
+    .charts { display: grid; grid-template-columns: repeat(auto-fit,minmax(320px,1fr)); gap: 24px; max-width: 1000px; margin: 0 auto; }
+    .chart-card { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 500px; }
+    .chart-card canvas { width: 100%; height: 360px; margin: 0; }
+    .caption { margin-top: 8px; font-size: 14px; color: #555; }
+    #to-depth5 { display: none; margin: 40px auto 0; }
+
+    /* STEP3 */
+    #depth5 { background: #fff; padding: 40px 20px; }
+    .page-title { text-align: center; font-size: 24px; color: #004080; margin-bottom: 24px; }
+    .timeline-wrapper { position: relative; max-width: 900px; margin: 0 auto; padding-left: 60px; }
+    .timeline-line { position: absolute; left: 20px; top: 0; bottom: 0; width: 4px;
+      background: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='4' height='80'>\
+<line x1='2' y1='0' x2='2' y2='60' stroke='%23ccc' stroke-width='4'/>\
+<polygon points='0,60 4,60 2,80' fill='%23004080'/>\
+</svg>") repeat-y center; background-size: 4px 80px;
+    }
+    .timeline-content { margin-left: 40px; }
+    .timeline-block { margin-bottom: 60px; }
+    .timeline-month { font-weight: bold; color: #666; margin-bottom: 8px; position: relative; text-align: left; }
+    .timeline-month::before { content: '●'; color: #004080; position: absolute; left: -40px; top: 0; }
+    .timeline-block table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .timeline-block th, .timeline-block td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    .timeline-block th:nth-child(4), .timeline-block td:nth-child(4) { width: 100px; }
+    .timeline-block th:nth-child(5), .timeline-block td:nth-child(5) { width: 60px; }
+    .info-cell { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .badge.online { background: #448aff; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .btn.small { padding: 4px 8px; font-size: 12px; }
+    .taste-btn { margin-left: 8px; }
+
+    /* 결제 UI */
+    #checkout-section { max-width: 900px; margin: 40px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: none; }
+    #payment-list { margin-bottom: 24px; }
+    .payment-item { display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 12px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 8px; }
+    .payment-item .info { display: flex; align-items: center; gap: 8px; }
+    .payment-item .price { font-size: 16px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a data-target="depth1">메인</a>
+      <a data-target="depth2">STEP1</a>
+      <a data-target="depthCombined">STEP2</a>
+      <a data-target="depth5">STEP3</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- MAIN -->
+    <section id="depth1" class="active">
+      <div class="hero">
+        <div class="quote">“내게 딱 맞는 강좌, 커리핏이 찾아줍니다”</div>
+        <div class="title">커리핏 (CurriFit)</div>
+        <button id="start-btn" class="btn">지금 시작하려면 클릭하세요!</button>
+      </div>
+    </section>
+
+    <!-- STEP1 -->
+    <section id="depth2">
+      <h2>나를 합격시켜줄, 나에게 꼭 맞는 합격 로드맵 커리핏!</h2>
+      <div class="form-grid">
+        <div>
+          <label for="status">수강현황</label>
+          <input id="status" placeholder="예: 초시생"/>
+        </div>
+        <div>
+          <label for="univ">목표대학</label>
+          <input id="univ" placeholder="예: 서강대학교"/>
+        </div>
+        <div>
+          <label for="field">희망계열</label>
+          <input id="field" placeholder="예: 자연계열"/>
+        </div>
+        <div>
+          <label for="major">희망전공</label>
+          <input id="major" placeholder="예: 화학공학"/>
+        </div>
+        <div>
+          <label for="level">학습수준</label>
+          <select id="level">
+            <option value="">선택</option>
+            <option>학습수준1</option>
+            <option>학습수준2</option>
+            <option>학습수준3</option>
+          </select>
+        </div>
+        <div>
+          <label for="period">목표기간</label>
+          <select id="period">
+            <option value="">선택</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls">
+         <button id="show-lectures" class="btn">합격 커리핏 보기</button>
+      </div>
+      <div id="loading"><div class="loader"></div><p>AI 기반 강의 추천 중...</p></div>
+      <div id="lecture-title">합격생 커리핏 엿보기</div>
+      <div id="lecture-msg">00대 합격생 98%가 해당 강좌를 수강했어요!</div>
+      <div class="lecture-wrapper">
+        <div id="online"></div>
+        <button id="add-roadmap" class="btn">로드맵 추가</button>
+      </div>
+    </section>
+
+    <!-- STEP2 -->
+    <section id="depthCombined">
+      <h2>내 맞춤 로드맵 요약 &amp; 학습 진단 결과</h2>
+      <div class="summary">
+        <div class="card"><h3>수강현황</h3><p id="sum-status"></p></div>
+        <div class="card"><h3>목표대학</h3><p id="sum-univ"></p></div>
+        <div class="card"><h3>희망계열</h3><p id="sum-field"></p></div>
+        <div class="card"><h3>희망전공</h3><p id="sum-major"></p></div>
+        <div class="card"><h3>학습수준</h3><p id="sum-level"></p></div>
+        <div class="card"><h3>목표기간</h3><p id="sum-period"></p></div>
+        <div class="card full"><h3>선택 강좌</h3><ul id="sum-lectures"></ul></div>
+      </div>
+      <div class="charts">
+        <div class="chart-card">
+          <canvas id="radarChart"></canvas>
+          <p class="caption">나 vs 합격자</p>
+        </div>
+        <div class="chart-card">
+          <canvas id="barChart"></canvas>
+          <p class="caption">월별 성적 변화 추이</p>
+        </div>
+      </div>
+      <button id="to-depth5" class="btn">다음 단계</button>
+    </section>
+
+    <!-- STEP3 -->
+    <section id="depth5">
+      <div class="page-title">나를 합격시켜줄 맞춤 커리큘럼 – 커리핏</div>
+      <div class="timeline-wrapper">
+        <div class="timeline-line"></div>
+        <div class="timeline-content" id="timeline-content"></div>
+      </div>
+      <div id="checkout-section">
+        <h3 style="margin-bottom:16px;color:#004080;">선택 강좌 결제</h3>
+        <div id="payment-list"></div>
+        <div style="text-align:right;font-size:18px;margin:16px 0;">
+          총 합계: <span id="total-price">0원</span>
+        </div>
+        <div style="text-align:right;">
+          <button id="pay-button" class="btn">결제하기</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 화면 전환
+      function show(id){
+        document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+      }
+
+      // 네비 & 시작버튼
+      document.querySelectorAll('header nav a').forEach(a => {
+        a.addEventListener('click', e => { e.preventDefault(); show(a.dataset.target); });
+      });
+      document.getElementById('start-btn').onclick = () => show('depth2');
+
+      // 목표기간 옵션 생성
+      for (let m=3; m<=16; m++){
+        const o = document.createElement('option');
+        o.value = o.textContent = `${m}개월`;
+        document.getElementById('period').appendChild(o);
+      }
+
+      // STEP1 데이터
+      const lectures = {
+        '학습수준1': [{name:'영어 커리핏1',level:1},{name:'수학 커리핏1',level:1},{name:'모의고사 커리핏1',level:1},{name:'전공 기초 커리핏',level:1}],
+        '학습수준2': [{name:'영어 커리핏2',level:2},{name:'수학 커리핏2',level:2},{name:'모의고사 커리핏2',level:2},{name:'전공 심화 커리핏',level:2}],
+        '학습수준3': [{name:'TOP1 커리핏',level:3},{name:'TOP2 커리핏',level:3},{name:'TOP3 커리핏',level:3},{name:'TOP4 커리핏',level:3}],
+      };
+      const loadingEl = document.getElementById('loading'),
+            listEl    = document.getElementById('online'),
+            titleEl   = document.getElementById('lecture-title'),
+            msgEl     = document.getElementById('lecture-msg'),
+            addBtn    = document.getElementById('add-roadmap');
+
+      // 추천강의 보기
+      document.getElementById('show-lectures').onclick = () => {
+        // 입력검증
+        for (const id of ['status','univ','field','major','level','period']){
+          if (!document.getElementById(id).value) {
+            return alert('모든 정보를 입력해주세요.');
+          }
+        }
+        titleEl.style.display = msgEl.style.display = listEl.style.display = addBtn.style.display = 'none';
+        loadingEl.style.display = 'block';
+
+        setTimeout(()=>{
+          loadingEl.style.display = 'none';
+          titleEl.style.display = msgEl.style.display = listEl.style.display = 'grid';
+          addBtn.style.display = 'block';
+          listEl.innerHTML = '';
+
+          const lvl = document.getElementById('level').value;
+          lectures[lvl].forEach(item => {
+            const card = document.createElement('div');
+            card.className = `lecture-card level-${item.level}`;
+
+            // SVG 아이콘
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(svgNS,'svg');
+            svg.setAttribute('width','32'); svg.setAttribute('height','32'); svg.setAttribute('viewBox','0 0 24 24');
+            const p1 = document.createElementNS(svgNS,'path');
+            p1.setAttribute('d','M6 4h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z');
+            p1.setAttribute('fill', item.level===1?'#28a745': item.level===2?'#fd7e14':'#007bff');
+            const p2 = document.createElementNS(svgNS,'path');
+            p2.setAttribute('d','M8 6h8v2H8V6zm0 4h8v2H8v-2zm0 4h8v2H8v-2z');
+            p2.setAttribute('fill','#fff');
+            svg.append(p1,p2);
+
+            const lbl = document.createElement('span'); lbl.textContent = item.name;
+            const content = document.createElement('div'); content.className = 'content';
+            content.append(svg,lbl);
+
+            const chk = document.createElement('input');
+            chk.type = 'checkbox'; chk.value = item.name;
+
+            card.append(content,chk);
+            listEl.appendChild(card);
+          });
+        },1000);
+      };
+
+      // STEP1 → STEP2
+      addBtn.onclick = () => {
+        // 요약정보 채우기
+        ['status','univ','field','major','level','period'].forEach(id => {
+          document.getElementById('sum-'+id).textContent = document.getElementById(id).value;
+        });
+        const ul = document.getElementById('sum-lectures');
+        ul.innerHTML = '';
+        document.querySelectorAll('#online input:checked').forEach(cb => {
+          const li = document.createElement('li');
+          li.textContent = cb.value;
+          ul.appendChild(li);
+        });
+
+        // STEP2 그래프 & 버튼 표시 토글
+        const hasLectures = ul.children.length > 0;
+        document.querySelector('.charts').style.display = hasLectures ? 'grid' : 'none';
+        document.getElementById('to-depth5').style.display = hasLectures ? 'block' : 'none';
+
+        show('depthCombined');
+      };
+
+      // STEP2 → STEP3
+      document.getElementById('to-depth5').onclick = () => {
+        // 타임라인 생성
+        const months = ['2025년 7월','2025년 9월','2025년 11월','2025년 12월'];
+        const cont = document.getElementById('timeline-content');
+        cont.innerHTML = '';
+        const samplePrices = ['₩50,000','₩55,000','₩60,000','₩65,000'];
+
+        document.querySelectorAll('#online input:checked').forEach((chk,idx) => {
+          const blk = document.createElement('div');
+          blk.className = 'timeline-block';
+          const price = samplePrices[idx] || '₩50,000';
+          blk.innerHTML = `
+            <div class="timeline-month">${months[idx]||months[3]}</div>
+            <table>
+              <thead><tr><th>과목</th><th>교수</th><th>강좌정보</th><th>금액</th><th>선택</th></tr></thead>
+              <tbody><tr>
+                <td>${chk.value}</td>
+                <td>장황수학</td>
+                <td class="info-cell">
+                  <span class="badge online">인강</span>
+                  <button class="btn small taste-btn">맛보기</button><br>
+                  [${chk.value} 커리큘럼]<br>수강기간: 30일
+                </td>
+                <td>${price}</td>
+                <td><input type="checkbox" class="timeline-select" value="${chk.value}"></td>
+              </tr></tbody>
+            </table>`;
+          cont.appendChild(blk);
+        });
+
+        // 맛보기 alert 바인딩
+        document.querySelectorAll('.taste-btn').forEach(b => b.onclick = () => alert('준비중입니다.'));
+
+        // 결제 UI 업데이트 함수
+        const prices = {
+          '영어 커리핏1':45000,'수학 커리핏1':45000,'모의고사 커리핏1':55000,'전공 기초 커리핏':50000,
+          '영어 커리핏2':60000,'수학 커리핏2':60000,'모의고사 커리핏2':65000,'전공 심화 커리핏':62000,
+          'TOP1 커리핏':70000,'TOP2 커리핏':72000,'TOP3 커리핏':75000,'TOP4 커리핏':78000
+        };
+        function updateCheckoutList(){
+          let total = 0;
+          const payList = document.getElementById('payment-list');
+          payList.innerHTML = '';
+          document.querySelectorAll('.timeline-select:checked').forEach(cb => {
+            const name = cb.value, fee = prices[name]||0;
+            total += fee;
+            payList.insertAdjacentHTML('beforeend', `
+              <div class="payment-item">
+                <div class="info">
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M6 4h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" fill="#448aff"/>
+                    <path d="M8 6h8v2H8V6zm0 4h8v2H8v-2zm0 4h8v2H8v-2z" fill="#fff"/>
+                  </svg>
+                  <span>${name}</span>
+                </div>
+                <div class="price">${fee.toLocaleString()}원</div>
+              </div>`);
+          });
+          document.getElementById('total-price').textContent = total.toLocaleString()+'원';
+          document.getElementById('checkout-section').style.display = total>0 ? 'block' : 'none';
+          document.getElementById('pay-button').onclick = () => {
+            if (total===0) return alert('선택된 강좌가 없습니다.');
+            alert(`총 ${total.toLocaleString()}원을 결제합니다.`);
+          };
+        }
+
+        // 체크박스 change 바인딩
+        document.querySelectorAll('.timeline-select').forEach(chk => chk.onchange = updateCheckoutList);
+        updateCheckoutList();
+
+        show('depth5');
+      };
+
+      // STEP2 차트 렌더링
+      new Chart(document.getElementById('radarChart'), {
+        type: 'radar',
+        data: {
+          labels: ['논리','어휘','구조','문법','독해'],
+          datasets: [
+            { label:'나', data:[98,95,44,48,57], borderColor:'#448aff', backgroundColor:'rgba(68,138,255,0.3)', pointBackgroundColor:'#448aff' },
+            { label:'합격자', data:[85,65,85,95,95], borderColor:'#999', backgroundColor:'rgba(153,153,153,0.2)', pointBackgroundColor:'#999' }
+          ]
+        },
+        options: { plugins:{ legend:{ position:'top' } }, scales:{ r:{ beginAtZero:true, max:100, ticks:{ stepSize:20 } } } }
+      });
+      new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+          labels:['1월','2월','3월','4월','5월','6월','7월'],
+          datasets:[
+            { label:'나', data:[83,64,72,58,76,54,69], backgroundColor:'#448aff' },
+            { label:'합격자', data:[99,93,84,68,71,76,63], backgroundColor:'#999' }
+          ]
+        },
+        options:{ scales:{ y:{ beginAtZero:true, max:100 }, x:{ grid:{ display:false } } }, plugins:{ legend:{ position:'top' } } }
+      });
+    });
+  </script>
+</body>
+</html>
